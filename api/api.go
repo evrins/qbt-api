@@ -12,6 +12,7 @@ type Api struct {
 	address string
 	Auth    *Auth
 	App     *App
+	Log     *Log
 }
 
 func NewApi(address string) (api *Api, err error) {
@@ -28,6 +29,7 @@ func NewApi(address string) (api *Api, err error) {
 
 	api.Auth = &Auth{api}
 	api.App = &App{api}
+	api.Log = &Log{api}
 
 	return api, nil
 }
