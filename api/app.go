@@ -172,7 +172,7 @@ type Preferences struct {
 	SavePath                           string                 `json:"save_path"`
 	TempPathEnabled                    bool                   `json:"temp_path_enabled"`
 	TempPath                           string                 `json:"temp_path"`
-	ScanDirs                           map[string]int64       `json:"scan_dirs"`
+	ScanDirs                           map[string]any         `json:"scan_dirs"` // 0 Download to the monitored folder, 1 Download to the default save path, string Download to this path
 	ExportDir                          string                 `json:"export_dir"`
 	ExportDirFin                       string                 `json:"export_dir_fin"`
 	MailNotificationEnabled            bool                   `json:"mail_notification_enabled"`
