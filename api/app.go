@@ -327,7 +327,7 @@ func (a *App) Preferences(ctx context.Context) (preferences *Preferences, err er
 }
 
 func (a *App) SetPreferences(ctx context.Context, pref Preferences) (respText string, err error) {
-	link := fmt.Sprintf("%s/api/v2/app/preferences", a.address)
+	link := fmt.Sprintf("%s/api/v2/app/setPreferences", a.address)
 
 	content, err := json.Marshal(pref)
 	if err != nil {
