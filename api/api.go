@@ -8,12 +8,13 @@ import (
 )
 
 type Api struct {
-	hc      *http.Client
-	address string
-	Auth    *Auth
-	App     *App
-	Log     *Log
-	Sync    *Sync
+	hc           *http.Client
+	address      string
+	Auth         *Auth
+	App          *App
+	Log          *Log
+	Sync         *Sync
+	TransferInfo *TransferInfo
 }
 
 func NewApi(address string) (api *Api, err error) {
@@ -32,6 +33,7 @@ func NewApi(address string) (api *Api, err error) {
 	api.App = &App{api}
 	api.Log = &Log{api}
 	api.Sync = &Sync{api}
+	api.TransferInfo = &TransferInfo{api}
 
 	return api, nil
 }
