@@ -16,10 +16,10 @@ type Auth struct {
 func (a *Auth) Login(ctx context.Context, username, password string) (respText string, err error) {
 	link := fmt.Sprintf("%s/api/v2/auth/login", a.address)
 
-	formData := url.Values{
-		"username": []string{username},
-		"password": []string{password},
-	}
+	formData := url.Values{}
+	formData.Set("username", username)
+	formData.Set("password", password)
+
 	body := strings.NewReader(formData.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, body)
 	if err != nil {

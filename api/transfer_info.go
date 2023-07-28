@@ -91,16 +91,11 @@ func (ti *TransferInfo) ToggleSpeedLimitsMode(ctx context.Context) (err error) {
 // DownloadLimit return current download global speed limit in bytes/second return zero if no limit
 func (ti *TransferInfo) DownloadLimit(ctx context.Context) (limit int64, err error) {
 	link := fmt.Sprintf("%s/api/v2/transfer/downloadLimit", ti.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
+	resp, _, err := ti.doRequest(ctx, http.MethodGet, link, nil, nil)
 	if err != nil {
 		return
 	}
-	resp, err := ti.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	content, err := io.ReadAll(resp.Body)
+	content, err := io.ReadAll(resp)
 	if err != nil {
 		return
 	}
@@ -185,17 +180,8 @@ func (ti *TransferInfo) BanPeers(ctx context.Context, peerList []string) (err er
 	peers := strings.Join(peerList, "|")
 	formData := url.Values{}
 	formData.Set("peers", peers)
-	body := strings.NewReader(formData.Encode())
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, body)
-	if err != nil {
-		return
-	}
-
-	resp, err := ti.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
+	resp, _, err := ti.doRequest(ctx, http.MethodPost, link, nil, formData)
+	defer resp.Close()
 	return
 }
