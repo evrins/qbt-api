@@ -22,6 +22,7 @@ type Api struct {
 	Sync              *Sync
 	TransferInfo      *TransferInfo
 	TorrentManagement *TorrentManagement
+	Rss               *Rss
 }
 
 func NewApi(address string) (api *Api, err error) {
@@ -43,6 +44,7 @@ func NewApi(address string) (api *Api, err error) {
 	api.Sync = &Sync{api}
 	api.TransferInfo = &TransferInfo{api}
 	api.TorrentManagement = &TorrentManagement{api}
+	api.Rss = &Rss{api}
 
 	return api, nil
 }
