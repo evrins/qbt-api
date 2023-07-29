@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,6 +30,7 @@ type Api struct {
 	TransferInfo      *TransferInfo
 	TorrentManagement *TorrentManagement
 	Rss               *Rss
+	Search            *Search
 }
 
 func NewApi(address string, options ...Option) (api *Api, err error) {
@@ -54,6 +56,7 @@ func NewApi(address string, options ...Option) (api *Api, err error) {
 	api.TransferInfo = &TransferInfo{api}
 	api.TorrentManagement = &TorrentManagement{api}
 	api.Rss = &Rss{api}
+	api.Search = &Search{api}
 
 	return api, nil
 }
@@ -113,5 +116,14 @@ func (a *Api) makeRequest(req *http.Request) (rs io.ReadCloser, statusCode int, 
 	}
 
 	statusCode = resp.StatusCode
+
+	if statusCode != 200 {
+		content, err1 := io.ReadAll(rs)
+		if err1 != nil {
+			err = err1
+			return
+		}
+		err = errors.New(string(content))
+	}
 	return
 }
