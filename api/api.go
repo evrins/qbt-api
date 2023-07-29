@@ -12,6 +12,12 @@ import (
 	"time"
 )
 
+type Option func(api *Api)
+
+func EnableDebug(api *Api) {
+	api.debug = true
+}
+
 type Api struct {
 	hc                *http.Client
 	address           string
@@ -25,7 +31,7 @@ type Api struct {
 	Rss               *Rss
 }
 
-func NewApi(address string) (api *Api, err error) {
+func NewApi(address string, options ...Option) (api *Api, err error) {
 	api = &Api{}
 	api.address = strings.TrimSuffix(address, "/")
 	jar, err := cookiejar.New(nil)
@@ -36,7 +42,10 @@ func NewApi(address string) (api *Api, err error) {
 		Jar:     jar,
 		Timeout: 10 * time.Second,
 	}
-	api.debug = true
+
+	for _, opt := range options {
+		opt(api)
+	}
 
 	api.Auth = &Auth{api}
 	api.App = &App{api}
