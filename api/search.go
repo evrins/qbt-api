@@ -27,6 +27,7 @@ type StartResponse struct {
 	Id int64 `json:"id"`
 }
 
+// Start started Search is bound to http session so other session won't be able to see this search
 func (s *Search) Start(ctx context.Context, opts *SearchOptions) (startResponse *StartResponse, err error) {
 	link := fmt.Sprintf("%s/api/v2/search/start", s.address)
 
