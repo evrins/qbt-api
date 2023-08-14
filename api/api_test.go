@@ -9,7 +9,7 @@ var api *Api
 
 func init() {
 	var err error
-	api, err = NewApi("http://localhost:8080", EnableDebug)
+	api, err = NewApi("http://localhost:38080", EnableDebug)
 	if err != nil {
 		log.Fatalln(err)
 	}
