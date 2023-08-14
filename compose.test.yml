@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  qbt:
+    image: superng6/qbittorrent:4.5.4_v2.0.9
+    ports:
+      - 38080:8080
+
