@@ -3,14 +3,12 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 )
 
-type Log struct {
-	*Api
-}
+type Log service
 
 type LogOptions struct {
 	Normal      bool `json:"normal"`
@@ -44,26 +42,23 @@ type LogItem struct {
 
 // Main copy and modify DefaultLogOptions and pass modified options as parameter for default value is true
 func (l *Log) Main(ctx context.Context, opts LogOptions) (logs []*LogItem, err error) {
-	link := fmt.Sprintf("%s/api/v2/log/main", l.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
-	if err != nil {
-		return
-	}
-	query := req.URL.Query()
-	query.Add("normal", strconv.FormatBool(opts.Normal))
-	query.Add("info", strconv.FormatBool(opts.Info))
-	query.Add("warning", strconv.FormatBool(opts.Warning))
-	query.Add("critical", strconv.FormatBool(opts.Critical))
-	query.Add("last_known_id", strconv.Itoa(opts.LastKnownId))
-	req.URL.RawQuery = query.Encode()
+	path := "/api/v2/log/main"
 
-	resp, err := l.hc.Do(req)
+	query := url.Values{}
+	query.Set("normal", strconv.FormatBool(opts.Normal))
+	query.Set("info", strconv.FormatBool(opts.Info))
+	query.Set("warning", strconv.FormatBool(opts.Warning))
+	query.Set("critical", strconv.FormatBool(opts.Critical))
+	query.Set("last_known_id", strconv.Itoa(opts.LastKnownId))
+
+	resp, _, err := l.api.doRequest(ctx, http.MethodGet, path, query, nil)
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+
+	defer resp.Close()
 	logs = make([]*LogItem, 0)
-	err = json.NewDecoder(resp.Body).Decode(&logs)
+	err = json.NewDecoder(resp).Decode(&logs)
 	if err != nil {
 		return
 	}
@@ -86,22 +81,20 @@ type PeerLogItem struct {
 
 // Peers copy and modify DefaultPeerLogOptions and pass modified options as parameter for default value is -1
 func (l *Log) Peers(ctx context.Context, opts PeerLogOptions) (logs []*PeerLogItem, err error) {
-	link := fmt.Sprintf("%s/api/v2/log/peers", l.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
-	if err != nil {
-		return
-	}
-	query := req.URL.Query()
-	query.Add("last_known_id", strconv.Itoa(opts.LastKnownId))
-	req.URL.RawQuery = query.Encode()
+	path := "/api/v2/log/peers"
 
-	resp, err := l.hc.Do(req)
+	query := url.Values{}
+	query.Set("last_known_id", strconv.Itoa(opts.LastKnownId))
+
+	resp, _, err := l.api.doRequest(ctx, http.MethodGet, path, nil, nil)
+
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+
+	defer resp.Close()
 	logs = make([]*PeerLogItem, 0)
-	err = json.NewDecoder(resp.Body).Decode(&logs)
+	err = json.NewDecoder(resp).Decode(&logs)
 	if err != nil {
 		return
 	}

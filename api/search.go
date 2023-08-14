@@ -3,16 +3,13 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 )
 
-type Search struct {
-	*Api
-}
+type Search service
 
 type SearchOptions struct {
 	Pattern           string
@@ -29,7 +26,7 @@ type StartResponse struct {
 
 // Start started Search is bound to http session so other session won't be able to see this search
 func (s *Search) Start(ctx context.Context, opts *SearchOptions) (startResponse *StartResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/search/start", s.address)
+	path := "/api/v2/search/start"
 
 	formData := url.Values{}
 	formData.Set("pattern", opts.Pattern)
@@ -43,7 +40,7 @@ func (s *Search) Start(ctx context.Context, opts *SearchOptions) (startResponse 
 
 	formData.Set("category", joinHashes(opts.Category, opts.UseAllCategory))
 
-	resp, _, err := s.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -54,12 +51,12 @@ func (s *Search) Start(ctx context.Context, opts *SearchOptions) (startResponse 
 }
 
 func (s *Search) Stop(ctx context.Context, id int64) (err error) {
-	link := fmt.Sprintf("%s/api/v2/search/stop", s.address)
+	path := "/api/v2/search/stop"
 
 	formData := url.Values{}
 	formData.Set("id", strconv.FormatInt(id, 10))
 
-	resp, _, err := s.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -81,14 +78,14 @@ type Status struct {
 }
 
 func (s *Search) Status(ctx context.Context, id int64) (statusResponse StatusResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/search/status", s.address)
+	link := "/api/v2/search/status"
 
 	query := url.Values{}
 	if id != 0 {
 		query.Set("id", strconv.FormatInt(id, 10))
 	}
 
-	resp, _, err := s.doRequest(ctx, http.MethodPost, link, query, nil)
+	resp, _, err := s.api.doRequest(ctx, http.MethodPost, link, query, nil)
 	if err != nil {
 		return
 	}
@@ -118,14 +115,14 @@ type Result struct {
 }
 
 func (s *Search) Results(ctx context.Context, id, limit, offset int64) (resultResponse *ResultResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/search/results", s.address)
+	path := "/api/v2/search/results"
 
 	formData := url.Values{}
 	formData.Set("id", strconv.FormatInt(id, 10))
 	formData.Set("limit", strconv.FormatInt(limit, 10))
 	formData.Set("offset", strconv.FormatInt(offset, 10))
 
-	resp, _, err := s.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -139,14 +136,14 @@ func (s *Search) Results(ctx context.Context, id, limit, offset int64) (resultRe
 }
 
 func (s *Search) Delete(ctx context.Context, id int64) (err error) {
-	link := fmt.Sprintf("%s/api/v2/search/delete", s.address)
+	path := "/api/v2/search/delete"
 
 	formData := url.Values{}
 	if id != 0 {
 		formData.Set("id", strconv.FormatInt(id, 10))
 	}
 
-	resp, _, err := s.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -171,9 +168,9 @@ type PluginCategory struct {
 }
 
 func (s *Search) Plugins(ctx context.Context) (pluginsResponse PluginsResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/search/plugins", s.address)
+	path := "/api/v2/search/plugins"
 
-	resp, _, err := s.doRequest(ctx, http.MethodPost, link, nil, nil)
+	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, nil)
 	if err != nil {
 		return
 	}
@@ -187,12 +184,12 @@ func (s *Search) Plugins(ctx context.Context) (pluginsResponse PluginsResponse, 
 }
 
 func (s *Search) InstallPlugin(ctx context.Context, sources []string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/search/installPlugin", s.address)
+	path := "/api/v2/search/installPlugin"
 
 	formData := url.Values{}
 	formData.Set("sources", strings.Join(sources, "|"))
 
-	resp, _, err := s.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -201,12 +198,12 @@ func (s *Search) InstallPlugin(ctx context.Context, sources []string) (err error
 }
 
 func (s *Search) UninstallPlugin(ctx context.Context, names []string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/search/uninstallPlugin", s.address)
+	path := "/api/v2/search/uninstallPlugin"
 
 	formData := url.Values{}
 	formData.Set("names", strings.Join(names, "|"))
 
-	resp, _, err := s.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -215,13 +212,13 @@ func (s *Search) UninstallPlugin(ctx context.Context, names []string) (err error
 }
 
 func (s *Search) EnablePlugin(ctx context.Context, names []string, enable bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/search/enablePlugin", s.address)
+	path := "/api/v2/search/enablePlugin"
 
 	formData := url.Values{}
 	formData.Set("names", strings.Join(names, "|"))
 	formData.Set("enable", strconv.FormatBool(enable))
 
-	resp, _, err := s.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -230,9 +227,9 @@ func (s *Search) EnablePlugin(ctx context.Context, names []string, enable bool) 
 }
 
 func (s *Search) UpdatePlugins(ctx context.Context) (err error) {
-	link := fmt.Sprintf("%s/api/v2/search/updatePlugins", s.address)
+	path := "/api/v2/search/updatePlugins"
 
-	resp, _, err := s.doRequest(ctx, http.MethodPost, link, nil, nil)
+	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, nil)
 	if err != nil {
 		return
 	}

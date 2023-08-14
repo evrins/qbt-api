@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -15,9 +14,7 @@ import (
 	"strings"
 )
 
-type TorrentManagement struct {
-	*Api
-}
+type TorrentManagement service
 
 type TorrentManagementInfoFilter string
 
@@ -120,34 +117,29 @@ type TorrentManagementInfo struct {
 }
 
 func (tm *TorrentManagement) Info(ctx context.Context, opts TorrentManagementInfoOptions) (infoList []*TorrentManagementInfo, err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/info", tm.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
-	if err != nil {
-		return
-	}
+	path := "/api/v2/torrents/info"
 
-	query := req.URL.Query()
-	query.Add("filter", string(opts.Filter))
+	query := url.Values{}
+	query.Set("filter", string(opts.Filter))
 	if opts.Category != nil {
-		query.Add("category", *opts.Category)
+		query.Set("category", *opts.Category)
 	}
 	if opts.Tag != nil {
-		query.Add("tag", *opts.Tag)
+		query.Set("tag", *opts.Tag)
 	}
-	query.Add("sort", opts.Sort)
-	query.Add("reverse", strconv.FormatBool(opts.Reverse))
-	query.Add("limit", strconv.FormatInt(opts.Limit, 10))
-	query.Add("offset", strconv.FormatInt(opts.Offset, 10))
-	query.Add("hashes", strings.Join(opts.Hashes, "|"))
-	req.URL.RawQuery = query.Encode()
+	query.Set("sort", opts.Sort)
+	query.Set("reverse", strconv.FormatBool(opts.Reverse))
+	query.Set("limit", strconv.FormatInt(opts.Limit, 10))
+	query.Set("offset", strconv.FormatInt(opts.Offset, 10))
+	query.Set("hashes", strings.Join(opts.Hashes, "|"))
 
-	resp, err := tm.hc.Do(req)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodGet, path, query, nil)
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer resp.Close()
 	infoList = make([]*TorrentManagementInfo, 0)
-	err = json.NewDecoder(resp.Body).Decode(&infoList)
+	err = json.NewDecoder(resp).Decode(&infoList)
 	if err != nil {
 		return
 	}
@@ -197,23 +189,19 @@ type TorrentManagementProperties struct {
 }
 
 func (tm *TorrentManagement) Properties(ctx context.Context, hash string) (properties *TorrentManagementProperties, err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/properties", tm.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
+	path := "/api/v2/torrents/properties"
+
+	query := url.Values{}
+	query.Set("hash", hash)
+
+	resp, _, err := tm.api.doRequest(ctx, http.MethodGet, path, query, nil)
+
 	if err != nil {
 		return
 	}
-
-	query := req.URL.Query()
-	query.Add("hash", hash)
-	req.URL.RawQuery = query.Encode()
-
-	resp, err := tm.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
+	defer resp.Close()
 	properties = &TorrentManagementProperties{}
-	err = json.NewDecoder(resp.Body).Decode(properties)
+	err = json.NewDecoder(resp).Decode(properties)
 	if err != nil {
 		return
 	}
@@ -240,23 +228,19 @@ type TorrentManagementTracker struct {
 }
 
 func (tm *TorrentManagement) Trackers(ctx context.Context, hash string) (trackers []*TorrentManagementTracker, err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/trackers", tm.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
+	path := "/api/v2/torrents/trackers"
+
+	query := url.Values{}
+	query.Set("hash", hash)
+
+	resp, _, err := tm.api.doRequest(ctx, http.MethodGet, path, query, nil)
+
 	if err != nil {
 		return
 	}
-
-	query := req.URL.Query()
-	query.Add("hash", hash)
-	req.URL.RawQuery = query.Encode()
-
-	resp, err := tm.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
+	defer resp.Close()
 	trackers = make([]*TorrentManagementTracker, 0)
-	err = json.NewDecoder(resp.Body).Decode(&trackers)
+	err = json.NewDecoder(resp).Decode(&trackers)
 	if err != nil {
 		return
 	}
@@ -268,23 +252,19 @@ type TorrentManagementWebSeed struct {
 }
 
 func (tm *TorrentManagement) WebSeeds(ctx context.Context, hash string) (webSeedList []*TorrentManagementWebSeed, err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/webseeds", tm.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
+	path := "/api/v2/torrents/webseeds"
+
+	query := url.Values{}
+	query.Set("hash", hash)
+
+	resp, _, err := tm.api.doRequest(ctx, http.MethodGet, path, query, nil)
+
 	if err != nil {
 		return
 	}
-
-	query := req.URL.Query()
-	query.Add("hash", hash)
-	req.URL.RawQuery = query.Encode()
-
-	resp, err := tm.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
+	defer resp.Close()
 	webSeedList = make([]*TorrentManagementWebSeed, 0)
-	err = json.NewDecoder(resp.Body).Decode(&webSeedList)
+	err = json.NewDecoder(resp).Decode(&webSeedList)
 	if err != nil {
 		return
 	}
@@ -310,30 +290,25 @@ type TorrentManagementFile struct {
 }
 
 func (tm *TorrentManagement) Files(ctx context.Context, hash string, indexes []int) (fileList []*TorrentManagementFile, err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/files", tm.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
-	if err != nil {
-		return
-	}
+	path := "/api/v2/torrents/files"
 
 	indexStringArray := make([]string, len(indexes))
 	for i := 0; i < len(indexes); i++ {
 		indexStringArray[i] = strconv.Itoa(indexes[i])
 	}
-	query := req.URL.Query()
-	query.Add("hash", hash)
+	query := url.Values{}
+	query.Set("hash", hash)
 	if len(indexes) > 0 {
-		query.Add("indexes", strings.Join(indexStringArray, "|"))
+		query.Set("indexes", strings.Join(indexStringArray, "|"))
 	}
-	req.URL.RawQuery = query.Encode()
 
-	resp, err := tm.hc.Do(req)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodGet, path, query, nil)
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer resp.Close()
 	fileList = make([]*TorrentManagementFile, 0)
-	err = json.NewDecoder(resp.Body).Decode(&fileList)
+	err = json.NewDecoder(resp).Decode(&fileList)
 	if err != nil {
 		return
 	}
@@ -347,23 +322,19 @@ const PieceStateNowDownloading PieceState = 1
 const PieceStateAlreadyDownloaded PieceState = 2
 
 func (tm *TorrentManagement) PieceStates(ctx context.Context, hash string) (pieceStates []PieceState, err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/pieceStates", tm.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
+	path := "/api/v2/torrents/pieceStates"
+
+	query := url.Values{}
+	query.Set("hash", hash)
+
+	resp, _, err := tm.api.doRequest(ctx, http.MethodGet, path, query, nil)
+
 	if err != nil {
 		return
 	}
-
-	query := req.URL.Query()
-	query.Add("hash", hash)
-	req.URL.RawQuery = query.Encode()
-
-	resp, err := tm.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
+	defer resp.Close()
 	pieceStates = make([]PieceState, 0)
-	err = json.NewDecoder(resp.Body).Decode(&pieceStates)
+	err = json.NewDecoder(resp).Decode(&pieceStates)
 	if err != nil {
 		return
 	}
@@ -371,23 +342,19 @@ func (tm *TorrentManagement) PieceStates(ctx context.Context, hash string) (piec
 }
 
 func (tm *TorrentManagement) PieceHashes(ctx context.Context, hash string) (pieceHashes []string, err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/pieceHashes", tm.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
+	path := "/api/v2/torrents/pieceHashes"
+
+	query := url.Values{}
+	query.Set("hash", hash)
+
+	resp, _, err := tm.api.doRequest(ctx, http.MethodGet, path, query, nil)
+
 	if err != nil {
 		return
 	}
-
-	query := req.URL.Query()
-	query.Add("hash", hash)
-	req.URL.RawQuery = query.Encode()
-
-	resp, err := tm.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
+	defer resp.Close()
 	pieceHashes = make([]string, 0)
-	err = json.NewDecoder(resp.Body).Decode(&pieceHashes)
+	err = json.NewDecoder(resp).Decode(&pieceHashes)
 	if err != nil {
 		return
 	}
@@ -402,12 +369,12 @@ func joinHashes(hashes []string, all bool) string {
 }
 
 func (tm *TorrentManagement) Pause(ctx context.Context, hashes []string, all bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/pause", tm.address)
+	path := "/api/v2/torrents/pause"
 
 	query := url.Values{}
 	query.Set("hashes", joinHashes(hashes, all))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, query, nil)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, query, nil)
 	if err != nil {
 		return
 	}
@@ -416,12 +383,12 @@ func (tm *TorrentManagement) Pause(ctx context.Context, hashes []string, all boo
 }
 
 func (tm *TorrentManagement) Resume(ctx context.Context, hashes []string, all bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/resume", tm.address)
+	path := "/api/v2/torrents/resume"
 
 	query := url.Values{}
 	query.Set("hashes", joinHashes(hashes, all))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, query, nil)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, query, nil)
 	if err != nil {
 		return
 	}
@@ -430,13 +397,13 @@ func (tm *TorrentManagement) Resume(ctx context.Context, hashes []string, all bo
 }
 
 func (tm *TorrentManagement) Delete(ctx context.Context, hashes []string, all bool, deleteFiles bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/delete", tm.address)
+	path := "/api/v2/torrents/delete"
 
 	query := url.Values{}
 	query.Set("hashes", joinHashes(hashes, all))
 	query.Set("deleteFiles", strconv.FormatBool(deleteFiles))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, query, nil)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, query, nil)
 	if err != nil {
 		return
 	}
@@ -445,12 +412,12 @@ func (tm *TorrentManagement) Delete(ctx context.Context, hashes []string, all bo
 }
 
 func (tm *TorrentManagement) Recheck(ctx context.Context, hashes []string, all bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/recheck", tm.address)
+	path := "/api/v2/torrents/recheck"
 
 	query := url.Values{}
 	query.Set("hashes", joinHashes(hashes, all))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, query, nil)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, query, nil)
 	if err != nil {
 		return
 	}
@@ -459,12 +426,12 @@ func (tm *TorrentManagement) Recheck(ctx context.Context, hashes []string, all b
 }
 
 func (tm *TorrentManagement) Reannounce(ctx context.Context, hashes []string, all bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/reannounce", tm.address)
+	path := "/api/v2/torrents/reannounce"
 
 	query := url.Values{}
 	query.Set("hashes", joinHashes(hashes, all))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, query, nil)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, query, nil)
 	if err != nil {
 		return
 	}
@@ -493,7 +460,7 @@ type TorrentManagementAddOptions struct {
 }
 
 func (tm *TorrentManagement) Add(ctx context.Context, opts TorrentManagementAddOptions) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/add", tm.address)
+	path := "/api/v2/torrents/add"
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -620,7 +587,7 @@ func (tm *TorrentManagement) Add(ctx context.Context, opts TorrentManagementAddO
 		return
 	}
 
-	resp, _, err := tm.doRequestWithMultiPartForm(ctx, http.MethodPost, link, writer.FormDataContentType(), nil, body)
+	resp, _, err := tm.api.doRequestWithMultiPartForm(ctx, http.MethodPost, path, writer.FormDataContentType(), nil, body)
 	if err != nil {
 		return
 	}
@@ -629,13 +596,13 @@ func (tm *TorrentManagement) Add(ctx context.Context, opts TorrentManagementAddO
 }
 
 func (tm *TorrentManagement) AddTrackers(ctx context.Context, hash string, urls []string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/addTrackers", tm.address)
+	path := "/api/v2/torrents/addTrackers"
 
 	formData := url.Values{}
 	formData.Set("hash", hash)
 	formData.Set("urls", strings.Join(urls, "\n"))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -644,14 +611,14 @@ func (tm *TorrentManagement) AddTrackers(ctx context.Context, hash string, urls 
 }
 
 func (tm *TorrentManagement) EditTracker(ctx context.Context, hash, originUrl, newUrl string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/editTracker", tm.address)
+	path := "/api/v2/torrents/editTracker"
 
 	formData := url.Values{}
 	formData.Set("hash", hash)
 	formData.Set("origUrl", originUrl)
 	formData.Set("newUrl", newUrl)
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -660,13 +627,13 @@ func (tm *TorrentManagement) EditTracker(ctx context.Context, hash, originUrl, n
 }
 
 func (tm *TorrentManagement) RemoveTrackers(ctx context.Context, hash string, urls []string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/removeTrackers", tm.address)
+	path := "/api/v2/torrents/removeTrackers"
 
 	formData := url.Values{}
 	formData.Set("hash", hash)
 	formData.Set("urls", strings.Join(urls, "|"))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -682,13 +649,13 @@ type AddPeerResult struct {
 type AddPeerResponse map[string]AddPeerResult
 
 func (tm *TorrentManagement) AddPeers(ctx context.Context, hashes, peers []string) (addPeerResponse AddPeerResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/addPeers", tm.address)
+	path := "/api/v2/torrents/addPeers"
 
 	formData := url.Values{}
 	formData.Set("hashes", strings.Join(hashes, "|"))
 	formData.Set("peers", strings.Join(peers, "|"))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -702,12 +669,12 @@ func (tm *TorrentManagement) AddPeers(ctx context.Context, hashes, peers []strin
 }
 
 func (tm *TorrentManagement) IncreasePriority(ctx context.Context, hashes []string, all bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/increasePrio", tm.address)
+	path := "/api/v2/torrents/increasePrio"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -716,12 +683,12 @@ func (tm *TorrentManagement) IncreasePriority(ctx context.Context, hashes []stri
 }
 
 func (tm *TorrentManagement) DecreasePriority(ctx context.Context, hashes []string, all bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/decreasePrio", tm.address)
+	path := "/api/v2/torrents/decreasePrio"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -730,12 +697,12 @@ func (tm *TorrentManagement) DecreasePriority(ctx context.Context, hashes []stri
 }
 
 func (tm *TorrentManagement) TopPriority(ctx context.Context, hashes []string, all bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/topPrio", tm.address)
+	path := "/api/v2/torrents/topPrio"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -744,12 +711,12 @@ func (tm *TorrentManagement) TopPriority(ctx context.Context, hashes []string, a
 }
 
 func (tm *TorrentManagement) BottomPriority(ctx context.Context, hashes []string, all bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/bottomPrio", tm.address)
+	path := "/api/v2/torrents/bottomPrio"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -758,7 +725,7 @@ func (tm *TorrentManagement) BottomPriority(ctx context.Context, hashes []string
 }
 
 func (tm *TorrentManagement) SetFilePriority(ctx context.Context, hash string, ids []int, priority TorrentManagementFilePriority) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/filePrio", tm.address)
+	path := "/api/v2/torrents/filePrio"
 
 	stringIdArray := make([]string, len(ids))
 	for i, it := range ids {
@@ -769,7 +736,7 @@ func (tm *TorrentManagement) SetFilePriority(ctx context.Context, hash string, i
 	formData.Set("id", strings.Join(stringIdArray, "|"))
 	formData.Set("priority", strconv.Itoa(int(priority)))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -780,12 +747,12 @@ func (tm *TorrentManagement) SetFilePriority(ctx context.Context, hash string, i
 type DownloadLimitResponse map[string]int
 
 func (tm *TorrentManagement) DownloadLimit(ctx context.Context, hashes []string, all bool) (downloadLimitResponse DownloadLimitResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/downloadLimit", tm.address)
+	path := "/api/v2/torrents/downloadLimit"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -799,13 +766,13 @@ func (tm *TorrentManagement) DownloadLimit(ctx context.Context, hashes []string,
 }
 
 func (tm *TorrentManagement) SetDownloadLimit(ctx context.Context, hashes []string, all bool, limit int) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/setDownloadLimit", tm.address)
+	path := "/api/v2/torrents/setDownloadLimit"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 	formData.Set("limit", strconv.Itoa(limit))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -817,14 +784,14 @@ func (tm *TorrentManagement) SetDownloadLimit(ctx context.Context, hashes []stri
 // @ratioLimit -2 use global limit, -1 no limit
 // @seedingTimeLimit -2 use global limit, -1 no limit
 func (tm *TorrentManagement) SetShareLimits(ctx context.Context, hashes []string, all bool, ratioLimit float64, seedingTimeLimit int64) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/setShareLimits", tm.address)
+	path := "/api/v2/torrents/setShareLimits"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 	formData.Set("ratioLimit", strconv.FormatFloat(ratioLimit, 'f', 0, 64))
 	formData.Set("seedingTimeLimit", strconv.FormatInt(seedingTimeLimit, 10))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -835,12 +802,12 @@ func (tm *TorrentManagement) SetShareLimits(ctx context.Context, hashes []string
 type UploadLimitResponse map[string]int
 
 func (tm *TorrentManagement) UploadLimit(ctx context.Context, hashes []string, all bool) (uploadLimitResponse UploadLimitResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/uploadLimit", tm.address)
+	path := "/api/v2/torrents/uploadLimit"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -854,13 +821,13 @@ func (tm *TorrentManagement) UploadLimit(ctx context.Context, hashes []string, a
 }
 
 func (tm *TorrentManagement) SetUploadLimit(ctx context.Context, hashes []string, all bool, limit int64) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/setUploadLimit", tm.address)
+	path := "/api/v2/torrents/setUploadLimit"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 	formData.Set("limit", strconv.FormatInt(limit, 10))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -869,13 +836,13 @@ func (tm *TorrentManagement) SetUploadLimit(ctx context.Context, hashes []string
 }
 
 func (tm *TorrentManagement) SetLocation(ctx context.Context, hashes []string, all bool, location string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/setLocation", tm.address)
+	path := "/api/v2/torrents/setLocation"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 	formData.Set("location", location)
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -884,13 +851,13 @@ func (tm *TorrentManagement) SetLocation(ctx context.Context, hashes []string, a
 }
 
 func (tm *TorrentManagement) Rename(ctx context.Context, hash, name string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/rename", tm.address)
+	path := "/api/v2/torrents/rename"
 
 	formData := url.Values{}
 	formData.Set("hash", hash)
 	formData.Set("name", name)
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -899,13 +866,13 @@ func (tm *TorrentManagement) Rename(ctx context.Context, hash, name string) (err
 }
 
 func (tm *TorrentManagement) SetCategory(ctx context.Context, hashes []string, all bool, category string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/setCategory", tm.address)
+	path := "/api/v2/torrents/setCategory"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 	formData.Set("category", category)
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -916,9 +883,9 @@ func (tm *TorrentManagement) SetCategory(ctx context.Context, hashes []string, a
 type CategoryResponse map[string]Category
 
 func (tm *TorrentManagement) Categories(ctx context.Context) (categoryResponse CategoryResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/categories", tm.address)
+	path := "/api/v2/torrents/categories"
 
-	resp, _, err := tm.doRequest(ctx, http.MethodGet, link, nil, nil)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodGet, path, nil, nil)
 	if err != nil {
 		return
 	}
@@ -929,13 +896,13 @@ func (tm *TorrentManagement) Categories(ctx context.Context) (categoryResponse C
 }
 
 func (tm *TorrentManagement) CreateCategory(ctx context.Context, category *Category) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/createCategory", tm.address)
+	path := "/api/v2/torrents/createCategory"
 
 	formData := url.Values{}
 	formData.Set("category", category.Name)
 	formData.Set("savePath", category.SavePath)
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -944,13 +911,13 @@ func (tm *TorrentManagement) CreateCategory(ctx context.Context, category *Categ
 }
 
 func (tm *TorrentManagement) EditCategory(ctx context.Context, category *Category) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/editCategory", tm.address)
+	path := "/api/v2/torrents/editCategory"
 
 	formData := url.Values{}
 	formData.Set("category", category.Name)
 	formData.Set("savePath", category.SavePath)
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -959,12 +926,12 @@ func (tm *TorrentManagement) EditCategory(ctx context.Context, category *Categor
 }
 
 func (tm *TorrentManagement) RemoveCategories(ctx context.Context, categories []string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/removeCategories", tm.address)
+	path := "/api/v2/torrents/removeCategories"
 
 	formData := url.Values{}
 	formData.Set("categories", strings.Join(categories, "\n"))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -973,13 +940,13 @@ func (tm *TorrentManagement) RemoveCategories(ctx context.Context, categories []
 }
 
 func (tm *TorrentManagement) AddTags(ctx context.Context, hashes []string, all bool, tags []string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/addTags", tm.address)
+	path := "/api/v2/torrents/addTags"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 	formData.Set("tags", strings.Join(tags, ","))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -988,13 +955,13 @@ func (tm *TorrentManagement) AddTags(ctx context.Context, hashes []string, all b
 }
 
 func (tm *TorrentManagement) RemoveTags(ctx context.Context, hashes []string, all bool, tags []string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/removeTags", tm.address)
+	path := "/api/v2/torrents/removeTags"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 	formData.Set("tags", strings.Join(tags, ","))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -1003,12 +970,12 @@ func (tm *TorrentManagement) RemoveTags(ctx context.Context, hashes []string, al
 }
 
 func (tm *TorrentManagement) CreateTags(ctx context.Context, tags []string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/createTags", tm.address)
+	path := "/api/v2/torrents/createTags"
 
 	formData := url.Values{}
 	formData.Set("tags", strings.Join(tags, ","))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -1017,12 +984,12 @@ func (tm *TorrentManagement) CreateTags(ctx context.Context, tags []string) (err
 }
 
 func (tm *TorrentManagement) DeleteTags(ctx context.Context, tags []string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/deleteTags", tm.address)
+	path := "/api/v2/torrents/deleteTags"
 
 	formData := url.Values{}
 	formData.Set("tags", strings.Join(tags, ","))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -1031,13 +998,13 @@ func (tm *TorrentManagement) DeleteTags(ctx context.Context, tags []string) (err
 }
 
 func (tm *TorrentManagement) SetAutoManagement(ctx context.Context, hashes []string, all bool, enable bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/setAutoManagement", tm.address)
+	path := "/api/v2/torrents/setAutoManagement"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 	formData.Set("enable", strconv.FormatBool(enable))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -1046,12 +1013,12 @@ func (tm *TorrentManagement) SetAutoManagement(ctx context.Context, hashes []str
 }
 
 func (tm *TorrentManagement) ToggleSequentialDownload(ctx context.Context, hashes []string, all bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/toggleSequentialDownload", tm.address)
+	path := "/api/v2/torrents/toggleSequentialDownload"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -1060,12 +1027,12 @@ func (tm *TorrentManagement) ToggleSequentialDownload(ctx context.Context, hashe
 }
 
 func (tm *TorrentManagement) ToggleFirstLastPiecePriority(ctx context.Context, hashes []string, all bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/toggleFirstLastPiecePrio", tm.address)
+	path := "/api/v2/torrents/toggleFirstLastPiecePrio"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -1074,13 +1041,13 @@ func (tm *TorrentManagement) ToggleFirstLastPiecePriority(ctx context.Context, h
 }
 
 func (tm *TorrentManagement) SetForceStart(ctx context.Context, hashes []string, all bool, forceStart bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/setForceStart", tm.address)
+	path := "/api/v2/torrents/setForceStart"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 	formData.Set("value", strconv.FormatBool(forceStart))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -1089,13 +1056,13 @@ func (tm *TorrentManagement) SetForceStart(ctx context.Context, hashes []string,
 }
 
 func (tm *TorrentManagement) SetSuperSeeding(ctx context.Context, hashes []string, all bool, superSeeding bool) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/setSuperSeeding", tm.address)
+	path := "/api/v2/torrents/setSuperSeeding"
 
 	formData := url.Values{}
 	formData.Set("hashes", joinHashes(hashes, all))
 	formData.Set("value", strconv.FormatBool(superSeeding))
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -1104,14 +1071,14 @@ func (tm *TorrentManagement) SetSuperSeeding(ctx context.Context, hashes []strin
 }
 
 func (tm *TorrentManagement) RenameFile(ctx context.Context, hash, oldPath, newPath string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/renameFile", tm.address)
+	path := "/api/v2/torrents/renameFile"
 
 	formData := url.Values{}
 	formData.Set("hash", hash)
 	formData.Set("oldPath", oldPath)
 	formData.Set("newPath", newPath)
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -1120,14 +1087,14 @@ func (tm *TorrentManagement) RenameFile(ctx context.Context, hash, oldPath, newP
 }
 
 func (tm *TorrentManagement) RenameFolder(ctx context.Context, hash, oldPath, newPath string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/torrents/renameFolder", tm.address)
+	path := "/api/v2/torrents/renameFolder"
 
 	formData := url.Values{}
 	formData.Set("hash", hash)
 	formData.Set("oldPath", oldPath)
 	formData.Set("newPath", newPath)
 
-	resp, _, err := tm.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := tm.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}

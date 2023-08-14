@@ -2,37 +2,27 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
-type Auth struct {
-	*Api
-}
+type Auth service
 
 func (a *Auth) Login(ctx context.Context, username, password string) (respText string, err error) {
-	link := fmt.Sprintf("%s/api/v2/auth/login", a.address)
+	path := "/api/v2/auth/login"
 
 	formData := url.Values{}
 	formData.Set("username", username)
 	formData.Set("password", password)
 
-	body := strings.NewReader(formData.Encode())
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, body)
+	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := a.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	content, err := io.ReadAll(resp.Body)
+	defer resp.Close()
+	content, err := io.ReadAll(resp)
 	if err != nil {
 		return
 	}
@@ -41,17 +31,15 @@ func (a *Auth) Login(ctx context.Context, username, password string) (respText s
 }
 
 func (a *Auth) Logout(ctx context.Context) (respText string, err error) {
-	link := fmt.Sprintf("%s/api/v2/auth/logout", a.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, nil)
+	path := "/api/v2/auth/logout"
+
+	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
+
 	if err != nil {
 		return
 	}
-	resp, err := a.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	content, err := io.ReadAll(resp.Body)
+	defer resp.Close()
+	content, err := io.ReadAll(resp)
 	if err != nil {
 		return
 	}

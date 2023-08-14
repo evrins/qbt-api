@@ -23,6 +23,7 @@ type Api struct {
 	hc                *http.Client
 	address           string
 	debug             bool
+	common            *service
 	Auth              *Auth
 	App               *App
 	Log               *Log
@@ -33,9 +34,14 @@ type Api struct {
 	Search            *Search
 }
 
+type service struct {
+	api *Api
+}
+
 func NewApi(address string, options ...Option) (api *Api, err error) {
 	api = &Api{}
-	api.address = strings.TrimSuffix(address, "/")
+	address = strings.TrimSuffix(address, "/")
+	api.address = address
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return
@@ -45,23 +51,28 @@ func NewApi(address string, options ...Option) (api *Api, err error) {
 		Timeout: 10 * time.Second,
 	}
 
+	api.common = &service{
+		api: api,
+	}
+
 	for _, opt := range options {
 		opt(api)
 	}
 
-	api.Auth = &Auth{api}
-	api.App = &App{api}
-	api.Log = &Log{api}
-	api.Sync = &Sync{api}
-	api.TransferInfo = &TransferInfo{api}
-	api.TorrentManagement = &TorrentManagement{api}
-	api.Rss = &Rss{api}
-	api.Search = &Search{api}
+	api.Auth = (*Auth)(api.common)
+	api.App = (*App)(api.common)
+	api.Log = (*Log)(api.common)
+	api.Sync = (*Sync)(api.common)
+	api.TransferInfo = (*TransferInfo)(api.common)
+	api.TorrentManagement = (*TorrentManagement)(api.common)
+	api.Rss = (*Rss)(api.common)
+	api.Search = (*Search)(api.common)
 
 	return api, nil
 }
 
-func (a *Api) doRequest(ctx context.Context, method, link string, queryParams, formData url.Values) (rs io.ReadCloser, statusCode int, err error) {
+func (a *Api) doRequest(ctx context.Context, method, path string, queryParams, formData url.Values) (rs io.ReadCloser, statusCode int, err error) {
+	var link = fmt.Sprintf("%s%s", a.address, path)
 	var body io.Reader
 	if formData != nil {
 		body = strings.NewReader(formData.Encode())
@@ -83,8 +94,8 @@ func (a *Api) doRequest(ctx context.Context, method, link string, queryParams, f
 	return a.makeRequest(req)
 }
 
-func (a *Api) doRequestWithMultiPartForm(ctx context.Context, method, link, header string, queryParams url.Values, body io.Reader) (rs io.ReadCloser, statusCode int, err error) {
-
+func (a *Api) doRequestWithMultiPartForm(ctx context.Context, method, path, header string, queryParams url.Values, body io.Reader) (rs io.ReadCloser, statusCode int, err error) {
+	var link = fmt.Sprintf("%s%s", a.address, path)
 	req, err := http.NewRequestWithContext(ctx, method, link, body)
 	if err != nil {
 		return

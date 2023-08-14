@@ -3,29 +3,21 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
-type App struct {
-	*Api
-}
+type App service
 
 func (a *App) Version(ctx context.Context) (respText string, err error) {
-	link := fmt.Sprintf("%s/api/v2/app/version", a.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, nil)
+	var path = "/api/v2/app/version"
+	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
 	if err != nil {
 		return
 	}
-	resp, err := a.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	content, err := io.ReadAll(resp.Body)
+	defer resp.Close()
+	content, err := io.ReadAll(resp)
 	if err != nil {
 		return
 	}
@@ -34,17 +26,13 @@ func (a *App) Version(ctx context.Context) (respText string, err error) {
 }
 
 func (a *App) WebApiVersion(ctx context.Context) (respText string, err error) {
-	link := fmt.Sprintf("%s/api/v2/app/webapiVersion", a.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, nil)
+	path := "/api/v2/app/webapiVersion"
+	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
 	if err != nil {
 		return
 	}
-	resp, err := a.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	content, err := io.ReadAll(resp.Body)
+	defer resp.Close()
+	content, err := io.ReadAll(resp)
 	if err != nil {
 		return
 	}
@@ -61,18 +49,14 @@ type BuildInfo struct {
 }
 
 func (a *App) BuildInfo(ctx context.Context) (bi *BuildInfo, err error) {
-	link := fmt.Sprintf("%s/api/v2/app/buildInfo", a.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, nil)
+	path := "/api/v2/app/buildInfo"
+	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
 	if err != nil {
 		return
 	}
-	resp, err := a.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
+	defer resp.Close()
 	bi = &BuildInfo{}
-	err = json.NewDecoder(resp.Body).Decode(bi)
+	err = json.NewDecoder(resp).Decode(bi)
 	if err != nil {
 		return
 	}
@@ -80,17 +64,16 @@ func (a *App) BuildInfo(ctx context.Context) (bi *BuildInfo, err error) {
 }
 
 func (a *App) Shutdown(ctx context.Context) (respText string, err error) {
-	link := fmt.Sprintf("%s/api/v2/app/shutdown", a.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, nil)
+	path := "/api/v2/app/shutdown"
+	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
 	if err != nil {
 		return
 	}
-	resp, err := a.hc.Do(req)
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
-	content, err := io.ReadAll(resp.Body)
+	defer resp.Close()
+	content, err := io.ReadAll(resp)
 	if err != nil {
 		return
 	}
@@ -308,18 +291,14 @@ type Preferences struct {
 }
 
 func (a *App) Preferences(ctx context.Context) (preferences *Preferences, err error) {
-	link := fmt.Sprintf("%s/api/v2/app/preferences", a.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, nil)
+	path := "/api/v2/app/preferences"
+	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
 	if err != nil {
 		return
 	}
-	resp, err := a.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
+	defer resp.Close()
 	preferences = &Preferences{}
-	err = json.NewDecoder(resp.Body).Decode(preferences)
+	err = json.NewDecoder(resp).Decode(preferences)
 	if err != nil {
 		return
 	}
@@ -327,7 +306,7 @@ func (a *App) Preferences(ctx context.Context) (preferences *Preferences, err er
 }
 
 func (a *App) SetPreferences(ctx context.Context, pref Preferences) (respText string, err error) {
-	link := fmt.Sprintf("%s/api/v2/app/setPreferences", a.address)
+	path := "/api/v2/app/setPreferences"
 
 	content, err := json.Marshal(pref)
 	if err != nil {
@@ -336,18 +315,12 @@ func (a *App) SetPreferences(ctx context.Context, pref Preferences) (respText st
 	formData := url.Values{
 		"json": []string{string(content)},
 	}
-	body := strings.NewReader(formData.Encode())
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, body)
+	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := a.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	content, err = io.ReadAll(resp.Body)
+	defer resp.Close()
+	content, err = io.ReadAll(resp)
 	if err != nil {
 		return
 	}
@@ -356,17 +329,13 @@ func (a *App) SetPreferences(ctx context.Context, pref Preferences) (respText st
 }
 
 func (a *App) DefaultSavePath(ctx context.Context) (respText string, err error) {
-	link := fmt.Sprintf("%s/api/v2/app/defaultSavePath", a.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, nil)
+	path := "/api/v2/app/defaultSavePath"
+	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
 	if err != nil {
 		return
 	}
-	resp, err := a.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	content, err := io.ReadAll(resp.Body)
+	defer resp.Close()
+	content, err := io.ReadAll(resp)
 	if err != nil {
 		return
 	}

@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -11,9 +10,7 @@ import (
 	"strings"
 )
 
-type TransferInfo struct {
-	*Api
-}
+type TransferInfo service
 
 type ConnectionStatus string
 
@@ -33,17 +30,14 @@ type InfoResponse struct {
 }
 
 func (ti *TransferInfo) Info(ctx context.Context) (info *InfoResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/transfer/info", ti.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
+	path := "/api/v2/transfer/info"
+
+	resp, _, err := ti.api.doRequest(ctx, http.MethodGet, path, nil, nil)
 	if err != nil {
 		return
 	}
-	resp, err := ti.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	err = json.NewDecoder(resp.Body).Decode(&info)
+	defer resp.Close()
+	err = json.NewDecoder(resp).Decode(&info)
 	if err != nil {
 		return
 	}
@@ -56,17 +50,14 @@ const AlternativeSpeedLimitsDisabled SpeedLimitsMode = "0"
 const AlternativeSpeedLimitsEnabled SpeedLimitsMode = "1"
 
 func (ti *TransferInfo) SpeedLimitsMode(ctx context.Context) (speedLimitsMode SpeedLimitsMode, err error) {
-	link := fmt.Sprintf("%s/api/v2/transfer/speedLimitsMode", ti.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
+	path := "/api/v2/transfer/speedLimitsMode"
+
+	resp, _, err := ti.api.doRequest(ctx, http.MethodGet, path, nil, nil)
 	if err != nil {
 		return
 	}
-	resp, err := ti.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	content, err := io.ReadAll(resp.Body)
+	defer resp.Close()
+	content, err := io.ReadAll(resp)
 	if err != nil {
 		return
 	}
@@ -75,23 +66,21 @@ func (ti *TransferInfo) SpeedLimitsMode(ctx context.Context) (speedLimitsMode Sp
 }
 
 func (ti *TransferInfo) ToggleSpeedLimitsMode(ctx context.Context) (err error) {
-	link := fmt.Sprintf("%s/api/v2/transfer/toggleSpeedLimitsMode", ti.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, nil)
+	path := "/api/v2/transfer/toggleSpeedLimitsMode"
+
+	resp, _, err := ti.api.doRequest(ctx, http.MethodGet, path, nil, nil)
 	if err != nil {
 		return
 	}
-	resp, err := ti.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
+	defer resp.Close()
 	return
 }
 
 // DownloadLimit return current download global speed limit in bytes/second return zero if no limit
 func (ti *TransferInfo) DownloadLimit(ctx context.Context) (limit int64, err error) {
-	link := fmt.Sprintf("%s/api/v2/transfer/downloadLimit", ti.address)
-	resp, _, err := ti.doRequest(ctx, http.MethodGet, link, nil, nil)
+	path := "/api/v2/transfer/downloadLimit"
+
+	resp, _, err := ti.api.doRequest(ctx, http.MethodGet, path, nil, nil)
 	if err != nil {
 		return
 	}
@@ -107,41 +96,34 @@ func (ti *TransferInfo) DownloadLimit(ctx context.Context) (limit int64, err err
 }
 
 func (ti *TransferInfo) SetDownloadLimit(ctx context.Context, limit int64) (err error) {
-	link := fmt.Sprintf("%s/api/v2/transfer/setDownloadLimit", ti.address)
+	path := "/api/v2/transfer/setDownloadLimit"
 
 	formData := url.Values{
 		"limit": []string{strconv.FormatInt(limit, 10)},
 	}
-	body := strings.NewReader(formData.Encode())
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, body)
+	resp, _, err := ti.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
 
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := ti.hc.Do(req)
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer resp.Close()
 	return
 }
 
 // UploadLimit return current upload global speed limit in bytes/second return zero if no limit
 func (ti *TransferInfo) UploadLimit(ctx context.Context) (limit int64, err error) {
-	link := fmt.Sprintf("%s/api/v2/transfer/uploadLimit", ti.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
+	path := "/api/v2/transfer/uploadLimit"
+
+	resp, _, err := ti.api.doRequest(ctx, http.MethodGet, path, nil, nil)
 	if err != nil {
 		return
 	}
-	resp, err := ti.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	content, err := io.ReadAll(resp.Body)
+	defer resp.Close()
+	content, err := io.ReadAll(resp)
 	if err != nil {
 		return
 	}
@@ -153,35 +135,29 @@ func (ti *TransferInfo) UploadLimit(ctx context.Context) (limit int64, err error
 }
 
 func (ti *TransferInfo) SetUploadLimit(ctx context.Context, limit int64) (err error) {
-	link := fmt.Sprintf("%s/api/v2/transfer/setUploadLimit", ti.address)
+	path := "/api/v2/transfer/setUploadLimit"
 
 	formData := url.Values{
 		"limit": []string{strconv.FormatInt(limit, 10)},
 	}
-	body := strings.NewReader(formData.Encode())
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, link, body)
+	resp, _, err := ti.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := ti.hc.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
+	defer resp.Close()
 	return
 }
 
 func (ti *TransferInfo) BanPeers(ctx context.Context, peerList []string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/transfer/banPeers", ti.address)
+	path := "/api/v2/transfer/banPeers"
 
 	peers := strings.Join(peerList, "|")
 	formData := url.Values{}
 	formData.Set("peers", peers)
 
-	resp, _, err := ti.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := ti.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	defer resp.Close()
 	return
 }

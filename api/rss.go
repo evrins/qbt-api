@@ -3,23 +3,20 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 )
 
-type Rss struct {
-	*Api
-}
+type Rss service
 
 func (r *Rss) AddFolder(ctx context.Context, path string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/rss/addFolder", r.address)
+	path_ := "/api/v2/rss/addFolder"
 
 	formData := url.Values{}
 	formData.Set("path", path)
 
-	resp, _, err := r.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := r.api.doRequest(ctx, http.MethodPost, path_, nil, formData)
 	if err != nil {
 		return
 	}
@@ -28,7 +25,7 @@ func (r *Rss) AddFolder(ctx context.Context, path string) (err error) {
 }
 
 func (r *Rss) AddFeed(ctx context.Context, url_, path string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/rss/addFeed", r.address)
+	path_ := "/api/v2/rss/addFeed"
 
 	formData := url.Values{}
 	formData.Set("url", url_)
@@ -36,7 +33,7 @@ func (r *Rss) AddFeed(ctx context.Context, url_, path string) (err error) {
 		formData.Set("path", path)
 	}
 
-	resp, _, err := r.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := r.api.doRequest(ctx, http.MethodPost, path_, nil, formData)
 	if err != nil {
 		return
 	}
@@ -45,12 +42,12 @@ func (r *Rss) AddFeed(ctx context.Context, url_, path string) (err error) {
 }
 
 func (r *Rss) RemoveItem(ctx context.Context, path string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/rss/removeItem", r.address)
+	path_ := "/api/v2/rss/removeItem"
 
 	formData := url.Values{}
 	formData.Set("path", path)
 
-	resp, _, err := r.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := r.api.doRequest(ctx, http.MethodPost, path_, nil, formData)
 	if err != nil {
 		return
 	}
@@ -59,13 +56,13 @@ func (r *Rss) RemoveItem(ctx context.Context, path string) (err error) {
 }
 
 func (r *Rss) MoveItem(ctx context.Context, itemPath, destPath string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/rss/moveItem", r.address)
+	path := "/api/v2/rss/moveItem"
 
 	formData := url.Values{}
 	formData.Set("itemPath", itemPath)
 	formData.Set("destPath", destPath)
 
-	resp, _, err := r.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := r.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -97,12 +94,12 @@ type RssArticle struct {
 }
 
 func (r *Rss) Items(ctx context.Context, withData bool) (rssItemResponse RssItemResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/rss/items", r.address)
+	path := "/api/v2/rss/items"
 
 	query := url.Values{}
 	query.Set("withData", strconv.FormatBool(withData))
 
-	resp, _, err := r.doRequest(ctx, http.MethodGet, link, query, nil)
+	resp, _, err := r.api.doRequest(ctx, http.MethodGet, path, query, nil)
 	if err != nil {
 		return
 	}
@@ -116,7 +113,7 @@ func (r *Rss) Items(ctx context.Context, withData bool) (rssItemResponse RssItem
 }
 
 func (r *Rss) MarkAsRead(ctx context.Context, itemPath, articleId string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/rss/markAsRead", r.address)
+	path := "/api/v2/rss/markAsRead"
 
 	formData := url.Values{}
 	formData.Set("itemPath", itemPath)
@@ -124,7 +121,7 @@ func (r *Rss) MarkAsRead(ctx context.Context, itemPath, articleId string) (err e
 		formData.Set("articleId", articleId)
 	}
 
-	resp, _, err := r.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := r.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -133,12 +130,12 @@ func (r *Rss) MarkAsRead(ctx context.Context, itemPath, articleId string) (err e
 }
 
 func (r *Rss) RefreshItem(ctx context.Context, itemPath string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/rss/refreshItem", r.address)
+	path := "/api/v2/rss/refreshItem"
 
 	formData := url.Values{}
 	formData.Set("itemPath", itemPath)
 
-	resp, _, err := r.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := r.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -163,7 +160,7 @@ type RuleDef struct {
 }
 
 func (r *Rss) SetRule(ctx context.Context, ruleName string, ruleDef *RuleDef) (err error) {
-	link := fmt.Sprintf("%s/api/v2/rss/setRule", r.address)
+	path := "/api/v2/rss/setRule"
 
 	content, err := json.Marshal(ruleDef)
 	if err != nil {
@@ -174,7 +171,7 @@ func (r *Rss) SetRule(ctx context.Context, ruleName string, ruleDef *RuleDef) (e
 	formData.Set("ruleName", ruleName)
 	formData.Set("ruleDef", string(content))
 
-	resp, _, err := r.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := r.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -183,13 +180,13 @@ func (r *Rss) SetRule(ctx context.Context, ruleName string, ruleDef *RuleDef) (e
 }
 
 func (r *Rss) RenameRule(ctx context.Context, ruleName, newRuleName string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/rss/renameRule", r.address)
+	path := "/api/v2/rss/renameRule"
 
 	formData := url.Values{}
 	formData.Set("ruleName", ruleName)
 	formData.Set("newRuleName", newRuleName)
 
-	resp, _, err := r.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := r.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -198,12 +195,12 @@ func (r *Rss) RenameRule(ctx context.Context, ruleName, newRuleName string) (err
 }
 
 func (r *Rss) RemoveRule(ctx context.Context, ruleName string) (err error) {
-	link := fmt.Sprintf("%s/api/v2/rss/removeRule", r.address)
+	path := "/api/v2/rss/removeRule"
 
 	formData := url.Values{}
 	formData.Set("ruleName", ruleName)
 
-	resp, _, err := r.doRequest(ctx, http.MethodPost, link, nil, formData)
+	resp, _, err := r.api.doRequest(ctx, http.MethodPost, path, nil, formData)
 	if err != nil {
 		return
 	}
@@ -214,9 +211,9 @@ func (r *Rss) RemoveRule(ctx context.Context, ruleName string) (err error) {
 type RulesResponse map[string]RuleDef
 
 func (r *Rss) Rules(ctx context.Context) (rulesResponse RulesResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/rss/rules", r.address)
+	path := "/api/v2/rss/rules"
 
-	resp, _, err := r.doRequest(ctx, http.MethodGet, link, nil, nil)
+	resp, _, err := r.api.doRequest(ctx, http.MethodGet, path, nil, nil)
 	if err != nil {
 		return
 	}
@@ -232,12 +229,12 @@ func (r *Rss) Rules(ctx context.Context) (rulesResponse RulesResponse, err error
 type MatchingArticleResponse map[string][]string
 
 func (r *Rss) MatchingArticles(ctx context.Context, ruleName string) (matchingArticleResponse MatchingArticleResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/rss/matchingArticles", r.address)
+	path := "/api/v2/rss/matchingArticles"
 
 	query := url.Values{}
 	query.Set("ruleName", ruleName)
 
-	resp, _, err := r.doRequest(ctx, http.MethodGet, link, query, nil)
+	resp, _, err := r.api.doRequest(ctx, http.MethodGet, path, query, nil)
 	if err != nil {
 		return
 	}

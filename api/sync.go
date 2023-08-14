@@ -3,14 +3,12 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 )
 
-type Sync struct {
-	*Api
-}
+type Sync service
 
 type MainDataResponse struct {
 	Rid               int64               `json:"rid"`
@@ -109,21 +107,16 @@ type Torrent struct {
 }
 
 func (s *Sync) MainData(ctx context.Context, rid int64) (mainData MainDataResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/sync/maindata", s.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
-	if err != nil {
-		return
-	}
-	query := req.URL.Query()
-	query.Add("rid", strconv.FormatInt(rid, 10))
-	req.URL.RawQuery = query.Encode()
+	path := "/api/v2/sync/maindata"
+	query := url.Values{}
+	query.Set("rid", strconv.FormatInt(rid, 10))
 
-	resp, err := s.hc.Do(req)
+	resp, _, err := s.api.doRequest(ctx, http.MethodGet, path, query, nil)
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
-	err = json.NewDecoder(resp.Body).Decode(&mainData)
+	defer resp.Close()
+	err = json.NewDecoder(resp).Decode(&mainData)
 	if err != nil {
 		return
 	}
@@ -157,22 +150,19 @@ type Peer struct {
 }
 
 func (s *Sync) TorrentPeers(ctx context.Context, hash string, rid int64) (torrentPeersResponse TorrentPeersResponse, err error) {
-	link := fmt.Sprintf("%s/api/v2/sync/torrentPeers", s.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
-	if err != nil {
-		return
-	}
-	query := req.URL.Query()
+	path := "/api/v2/sync/torrentPeers"
+
+	query := url.Values{}
 	query.Add("hash", hash)
 	query.Add("rid", strconv.FormatInt(rid, 10))
-	req.URL.RawQuery = query.Encode()
 
-	resp, err := s.hc.Do(req)
+	resp, _, err := s.api.doRequest(ctx, http.MethodGet, path, query, nil)
+
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
-	err = json.NewDecoder(resp.Body).Decode(&torrentPeersResponse)
+	defer resp.Close()
+	err = json.NewDecoder(resp).Decode(&torrentPeersResponse)
 	if err != nil {
 		return
 	}
