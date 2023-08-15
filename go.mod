@@ -1,4 +1,4 @@
-module qbt-api
+module github.com/evrins/qbt-api
 
 go 1.20
 
