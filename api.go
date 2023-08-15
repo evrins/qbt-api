@@ -1,4 +1,4 @@
-package api
+package qbt_api
 
 import (
 	"bytes"

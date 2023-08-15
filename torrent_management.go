@@ -1,4 +1,4 @@
-package api
+package qbt_api
 
 import (
 	"bytes"
@@ -101,9 +101,9 @@ type TorrentManagementInfo struct {
 	SeedingTimeLimit  int                        `json:"seeding_time_limit"`
 	SeenComplete      int                        `json:"seen_complete"`
 	SeqDl             bool                       `json:"seq_dl"`
-	Size              int64                      `json:"size"`
-	State             TorrentManagementInfoState `json:"state"`
-	SuperSeeding      bool                       `json:"super_seeding"`
+	Size         int64                      `json:"size"`
+	State        TorrentManagementInfoState `json:"state"`
+	SuperSeeding bool                       `json:"super_seeding"`
 	Tags              string                     `json:"tags"`
 	TimeActive        int                        `json:"time_active"`
 	TotalSize         int64                      `json:"total_size"`
@@ -258,9 +258,9 @@ type TorrentManagementFile struct {
 	Index        int                           `json:"index"`
 	IsSeed       bool                          `json:"is_seed,omitempty"`
 	Name         string                        `json:"name"`
-	PieceRange   []int                         `json:"piece_range"`
-	Priority     TorrentManagementFilePriority `json:"priority"`
-	Progress     int                           `json:"progress"`
+	PieceRange []int                         `json:"piece_range"`
+	Priority   TorrentManagementFilePriority `json:"priority"`
+	Progress   int                           `json:"progress"`
 	Size         int                           `json:"size"`
 }
 
