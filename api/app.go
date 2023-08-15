@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 )
@@ -12,31 +11,19 @@ type App service
 
 func (a *App) Version(ctx context.Context) (respText string, err error) {
 	var path = "/api/v2/app/version"
-	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
+	err = a.api.doRequest(ctx, http.MethodPost, path, nil, nil, &respText)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
-	content, err := io.ReadAll(resp)
-	if err != nil {
-		return
-	}
-	respText = string(content)
 	return
 }
 
 func (a *App) WebApiVersion(ctx context.Context) (respText string, err error) {
 	path := "/api/v2/app/webapiVersion"
-	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
+	err = a.api.doRequest(ctx, http.MethodPost, path, nil, nil, &respText)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
-	content, err := io.ReadAll(resp)
-	if err != nil {
-		return
-	}
-	respText = string(content)
 	return
 }
 
@@ -50,13 +37,7 @@ type BuildInfo struct {
 
 func (a *App) BuildInfo(ctx context.Context) (bi *BuildInfo, err error) {
 	path := "/api/v2/app/buildInfo"
-	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
-	if err != nil {
-		return
-	}
-	defer resp.Close()
-	bi = &BuildInfo{}
-	err = json.NewDecoder(resp).Decode(bi)
+	err = a.api.doRequest(ctx, http.MethodPost, path, nil, nil, &bi)
 	if err != nil {
 		return
 	}
@@ -65,19 +46,10 @@ func (a *App) BuildInfo(ctx context.Context) (bi *BuildInfo, err error) {
 
 func (a *App) Shutdown(ctx context.Context) (respText string, err error) {
 	path := "/api/v2/app/shutdown"
-	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
+	err = a.api.doRequest(ctx, http.MethodPost, path, nil, nil, &respText)
 	if err != nil {
 		return
 	}
-	if err != nil {
-		return
-	}
-	defer resp.Close()
-	content, err := io.ReadAll(resp)
-	if err != nil {
-		return
-	}
-	respText = string(content)
 	return
 }
 
@@ -292,13 +264,7 @@ type Preferences struct {
 
 func (a *App) Preferences(ctx context.Context) (preferences *Preferences, err error) {
 	path := "/api/v2/app/preferences"
-	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
-	if err != nil {
-		return
-	}
-	defer resp.Close()
-	preferences = &Preferences{}
-	err = json.NewDecoder(resp).Decode(preferences)
+	err = a.api.doRequest(ctx, http.MethodPost, path, nil, nil, &preferences)
 	if err != nil {
 		return
 	}
@@ -315,30 +281,18 @@ func (a *App) SetPreferences(ctx context.Context, pref Preferences) (respText st
 	formData := url.Values{
 		"json": []string{string(content)},
 	}
-	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, formData)
+	err = a.api.doRequest(ctx, http.MethodPost, path, nil, formData, &respText)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
-	content, err = io.ReadAll(resp)
-	if err != nil {
-		return
-	}
-	respText = string(content)
 	return
 }
 
 func (a *App) DefaultSavePath(ctx context.Context) (respText string, err error) {
 	path := "/api/v2/app/defaultSavePath"
-	resp, _, err := a.api.doRequest(ctx, http.MethodPost, path, nil, nil)
+	err = a.api.doRequest(ctx, http.MethodPost, path, nil, nil, &respText)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
-	content, err := io.ReadAll(resp)
-	if err != nil {
-		return
-	}
-	respText = string(content)
 	return
 }

@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -40,13 +39,10 @@ func (s *Search) Start(ctx context.Context, opts *SearchOptions) (startResponse 
 
 	formData.Set("category", joinHashes(opts.Category, opts.UseAllCategory))
 
-	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
+	err = s.api.doRequest(ctx, http.MethodPost, path, nil, formData, &startResponse)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
-	startResponse = &StartResponse{}
-	err = json.NewDecoder(resp).Decode(&startResponse)
 	return
 }
 
@@ -56,15 +52,14 @@ func (s *Search) Stop(ctx context.Context, id int64) (err error) {
 	formData := url.Values{}
 	formData.Set("id", strconv.FormatInt(id, 10))
 
-	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
+	err = s.api.doRequest(ctx, http.MethodPost, path, nil, formData, emptyResponse)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
 	return
 }
 
-type StatusResponse []Status
+type StatusResponse []*Status
 
 type StatusEnum string
 
@@ -85,13 +80,7 @@ func (s *Search) Status(ctx context.Context, id int64) (statusResponse StatusRes
 		query.Set("id", strconv.FormatInt(id, 10))
 	}
 
-	resp, _, err := s.api.doRequest(ctx, http.MethodPost, link, query, nil)
-	if err != nil {
-		return
-	}
-	defer resp.Close()
-	statusResponse = []Status{}
-	err = json.NewDecoder(resp).Decode(&statusResponse)
+	err = s.api.doRequest(ctx, http.MethodPost, link, query, nil, &statusResponse)
 	if err != nil {
 		return
 	}
@@ -122,13 +111,7 @@ func (s *Search) Results(ctx context.Context, id, limit, offset int64) (resultRe
 	formData.Set("limit", strconv.FormatInt(limit, 10))
 	formData.Set("offset", strconv.FormatInt(offset, 10))
 
-	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
-	if err != nil {
-		return
-	}
-	defer resp.Close()
-	resultResponse = &ResultResponse{}
-	err = json.NewDecoder(resp).Decode(&resultResponse)
+	err = s.api.doRequest(ctx, http.MethodPost, path, nil, formData, &resultResponse)
 	if err != nil {
 		return
 	}
@@ -143,11 +126,10 @@ func (s *Search) Delete(ctx context.Context, id int64) (err error) {
 		formData.Set("id", strconv.FormatInt(id, 10))
 	}
 
-	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
+	err = s.api.doRequest(ctx, http.MethodPost, path, nil, formData, emptyResponse)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
 	return
 }
 
@@ -170,13 +152,7 @@ type PluginCategory struct {
 func (s *Search) Plugins(ctx context.Context) (pluginsResponse PluginsResponse, err error) {
 	path := "/api/v2/search/plugins"
 
-	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, nil)
-	if err != nil {
-		return
-	}
-	defer resp.Close()
-	pluginsResponse = []*Plugin{}
-	err = json.NewDecoder(resp).Decode(&pluginsResponse)
+	err = s.api.doRequest(ctx, http.MethodPost, path, nil, nil, &pluginsResponse)
 	if err != nil {
 		return
 	}
@@ -189,11 +165,10 @@ func (s *Search) InstallPlugin(ctx context.Context, sources []string) (err error
 	formData := url.Values{}
 	formData.Set("sources", strings.Join(sources, "|"))
 
-	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
+	err = s.api.doRequest(ctx, http.MethodPost, path, nil, formData, emptyResponse)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
 	return
 }
 
@@ -203,11 +178,10 @@ func (s *Search) UninstallPlugin(ctx context.Context, names []string) (err error
 	formData := url.Values{}
 	formData.Set("names", strings.Join(names, "|"))
 
-	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
+	err = s.api.doRequest(ctx, http.MethodPost, path, nil, formData, emptyResponse)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
 	return
 }
 
@@ -218,21 +192,19 @@ func (s *Search) EnablePlugin(ctx context.Context, names []string, enable bool) 
 	formData.Set("names", strings.Join(names, "|"))
 	formData.Set("enable", strconv.FormatBool(enable))
 
-	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, formData)
+	err = s.api.doRequest(ctx, http.MethodPost, path, nil, formData, emptyResponse)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
 	return
 }
 
 func (s *Search) UpdatePlugins(ctx context.Context) (err error) {
 	path := "/api/v2/search/updatePlugins"
 
-	resp, _, err := s.api.doRequest(ctx, http.MethodPost, path, nil, nil)
+	err = s.api.doRequest(ctx, http.MethodPost, path, nil, nil, emptyResponse)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
 	return
 }

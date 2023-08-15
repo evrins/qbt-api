@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +13,8 @@ import (
 	"strings"
 	"time"
 )
+
+var emptyResponse = new(string)
 
 type Option func(api *Api)
 
@@ -71,7 +74,7 @@ func NewApi(address string, options ...Option) (api *Api, err error) {
 	return api, nil
 }
 
-func (a *Api) doRequest(ctx context.Context, method, path string, queryParams, formData url.Values) (rs io.ReadCloser, statusCode int, err error) {
+func (a *Api) doRequest(ctx context.Context, method, path string, queryParams, formData url.Values, v any) (err error) {
 	var link = fmt.Sprintf("%s%s", a.address, path)
 	var body io.Reader
 	if formData != nil {
@@ -91,10 +94,10 @@ func (a *Api) doRequest(ctx context.Context, method, path string, queryParams, f
 		req.URL.RawQuery = queryParams.Encode()
 	}
 
-	return a.makeRequest(req)
+	return a.makeRequest(req, v)
 }
 
-func (a *Api) doRequestWithMultiPartForm(ctx context.Context, method, path, header string, queryParams url.Values, body io.Reader) (rs io.ReadCloser, statusCode int, err error) {
+func (a *Api) doRequestWithMultiPartForm(ctx context.Context, method, path, header string, queryParams url.Values, body io.Reader, v any) (err error) {
 	var link = fmt.Sprintf("%s%s", a.address, path)
 	req, err := http.NewRequestWithContext(ctx, method, link, body)
 	if err != nil {
@@ -107,17 +110,32 @@ func (a *Api) doRequestWithMultiPartForm(ctx context.Context, method, path, head
 		req.URL.RawQuery = queryParams.Encode()
 	}
 
-	return a.makeRequest(req)
+	return a.makeRequest(req, v)
 }
 
-func (a *Api) makeRequest(req *http.Request) (rs io.ReadCloser, statusCode int, err error) {
+func (a *Api) makeRequest(req *http.Request, v any) (err error) {
 	resp, err := a.hc.Do(req)
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	if a.debug {
 		fmt.Printf("received response status code: %v\n", resp.StatusCode)
+	}
+
+	if resp.StatusCode != 200 {
+		content, err1 := io.ReadAll(resp.Body)
+		if err1 != nil {
+			err = err1
+			return
+		}
+		err = errors.New(string(content))
+		return
+	}
+
+	var rs io.ReadCloser
+	if a.debug {
 		content, _ := io.ReadAll(resp.Body)
 		fmt.Println("received response body")
 		fmt.Println(string(content))
@@ -126,15 +144,19 @@ func (a *Api) makeRequest(req *http.Request) (rs io.ReadCloser, statusCode int, 
 		rs = resp.Body
 	}
 
-	statusCode = resp.StatusCode
-
-	if statusCode != 200 {
-		content, err1 := io.ReadAll(rs)
-		if err1 != nil {
-			err = err1
+	switch v2 := v.(type) {
+	case *string:
+		var content []byte
+		content, err = io.ReadAll(rs)
+		if err != nil {
 			return
 		}
-		err = errors.New(string(content))
+		*v2 = string(content)
+	default:
+		err = json.NewDecoder(rs).Decode(v)
+		if err != nil {
+			return
+		}
 	}
 	return
 }

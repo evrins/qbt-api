@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -32,12 +30,7 @@ type InfoResponse struct {
 func (ti *TransferInfo) Info(ctx context.Context) (info *InfoResponse, err error) {
 	path := "/api/v2/transfer/info"
 
-	resp, _, err := ti.api.doRequest(ctx, http.MethodGet, path, nil, nil)
-	if err != nil {
-		return
-	}
-	defer resp.Close()
-	err = json.NewDecoder(resp).Decode(&info)
+	err = ti.api.doRequest(ctx, http.MethodGet, path, nil, nil, &info)
 	if err != nil {
 		return
 	}
@@ -52,27 +45,20 @@ const AlternativeSpeedLimitsEnabled SpeedLimitsMode = "1"
 func (ti *TransferInfo) SpeedLimitsMode(ctx context.Context) (speedLimitsMode SpeedLimitsMode, err error) {
 	path := "/api/v2/transfer/speedLimitsMode"
 
-	resp, _, err := ti.api.doRequest(ctx, http.MethodGet, path, nil, nil)
+	err = ti.api.doRequest(ctx, http.MethodGet, path, nil, nil, &speedLimitsMode)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
-	content, err := io.ReadAll(resp)
-	if err != nil {
-		return
-	}
-	speedLimitsMode = SpeedLimitsMode(content)
 	return
 }
 
 func (ti *TransferInfo) ToggleSpeedLimitsMode(ctx context.Context) (err error) {
 	path := "/api/v2/transfer/toggleSpeedLimitsMode"
 
-	resp, _, err := ti.api.doRequest(ctx, http.MethodGet, path, nil, nil)
+	err = ti.api.doRequest(ctx, http.MethodPost, path, nil, nil, emptyResponse)
 	if err != nil {
 		return
 	}
-	defer resp.Close()
 	return
 }
 
@@ -80,15 +66,7 @@ func (ti *TransferInfo) ToggleSpeedLimitsMode(ctx context.Context) (err error) {
 func (ti *TransferInfo) DownloadLimit(ctx context.Context) (limit int64, err error) {
 	path := "/api/v2/transfer/downloadLimit"
 
-	resp, _, err := ti.api.doRequest(ctx, http.MethodGet, path, nil, nil)
-	if err != nil {
-		return
-	}
-	content, err := io.ReadAll(resp)
-	if err != nil {
-		return
-	}
-	limit, err = strconv.ParseInt(string(content), 10, 64)
+	err = ti.api.doRequest(ctx, http.MethodGet, path, nil, nil, &limit)
 	if err != nil {
 		return
 	}
@@ -102,15 +80,10 @@ func (ti *TransferInfo) SetDownloadLimit(ctx context.Context, limit int64) (err 
 		"limit": []string{strconv.FormatInt(limit, 10)},
 	}
 
-	resp, _, err := ti.api.doRequest(ctx, http.MethodPost, path, nil, formData)
+	err = ti.api.doRequest(ctx, http.MethodPost, path, nil, formData, emptyResponse)
 	if err != nil {
 		return
 	}
-
-	if err != nil {
-		return
-	}
-	defer resp.Close()
 	return
 }
 
@@ -118,16 +91,7 @@ func (ti *TransferInfo) SetDownloadLimit(ctx context.Context, limit int64) (err 
 func (ti *TransferInfo) UploadLimit(ctx context.Context) (limit int64, err error) {
 	path := "/api/v2/transfer/uploadLimit"
 
-	resp, _, err := ti.api.doRequest(ctx, http.MethodGet, path, nil, nil)
-	if err != nil {
-		return
-	}
-	defer resp.Close()
-	content, err := io.ReadAll(resp)
-	if err != nil {
-		return
-	}
-	limit, err = strconv.ParseInt(string(content), 10, 64)
+	err = ti.api.doRequest(ctx, http.MethodGet, path, nil, nil, &limit)
 	if err != nil {
 		return
 	}
@@ -141,12 +105,11 @@ func (ti *TransferInfo) SetUploadLimit(ctx context.Context, limit int64) (err er
 		"limit": []string{strconv.FormatInt(limit, 10)},
 	}
 
-	resp, _, err := ti.api.doRequest(ctx, http.MethodPost, path, nil, formData)
+	err = ti.api.doRequest(ctx, http.MethodPost, path, nil, formData, emptyResponse)
 	if err != nil {
 		return
 	}
 
-	defer resp.Close()
 	return
 }
 
@@ -157,7 +120,6 @@ func (ti *TransferInfo) BanPeers(ctx context.Context, peerList []string) (err er
 	formData := url.Values{}
 	formData.Set("peers", peers)
 
-	resp, _, err := ti.api.doRequest(ctx, http.MethodPost, path, nil, formData)
-	defer resp.Close()
+	err = ti.api.doRequest(ctx, http.MethodPost, path, nil, formData, emptyResponse)
 	return
 }

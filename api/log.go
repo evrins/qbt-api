@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -51,17 +50,11 @@ func (l *Log) Main(ctx context.Context, opts LogOptions) (logs []*LogItem, err e
 	query.Set("critical", strconv.FormatBool(opts.Critical))
 	query.Set("last_known_id", strconv.Itoa(opts.LastKnownId))
 
-	resp, _, err := l.api.doRequest(ctx, http.MethodGet, path, query, nil)
+	err = l.api.doRequest(ctx, http.MethodGet, path, query, nil, &logs)
 	if err != nil {
 		return
 	}
 
-	defer resp.Close()
-	logs = make([]*LogItem, 0)
-	err = json.NewDecoder(resp).Decode(&logs)
-	if err != nil {
-		return
-	}
 	return
 }
 
@@ -86,17 +79,10 @@ func (l *Log) Peers(ctx context.Context, opts PeerLogOptions) (logs []*PeerLogIt
 	query := url.Values{}
 	query.Set("last_known_id", strconv.Itoa(opts.LastKnownId))
 
-	resp, _, err := l.api.doRequest(ctx, http.MethodGet, path, nil, nil)
-
+	err = l.api.doRequest(ctx, http.MethodGet, path, nil, nil, &logs)
 	if err != nil {
 		return
 	}
 
-	defer resp.Close()
-	logs = make([]*PeerLogItem, 0)
-	err = json.NewDecoder(resp).Decode(&logs)
-	if err != nil {
-		return
-	}
 	return
 }

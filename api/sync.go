@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -106,17 +105,12 @@ type Torrent struct {
 	Upspeed           int    `json:"upspeed"`
 }
 
-func (s *Sync) MainData(ctx context.Context, rid int64) (mainData MainDataResponse, err error) {
+func (s *Sync) MainData(ctx context.Context, rid int64) (mainData *MainDataResponse, err error) {
 	path := "/api/v2/sync/maindata"
 	query := url.Values{}
 	query.Set("rid", strconv.FormatInt(rid, 10))
 
-	resp, _, err := s.api.doRequest(ctx, http.MethodGet, path, query, nil)
-	if err != nil {
-		return
-	}
-	defer resp.Close()
-	err = json.NewDecoder(resp).Decode(&mainData)
+	err = s.api.doRequest(ctx, http.MethodGet, path, query, nil, &mainData)
 	if err != nil {
 		return
 	}
@@ -149,20 +143,15 @@ type Peer struct {
 	Uploaded     int    `json:"uploaded"`
 }
 
-func (s *Sync) TorrentPeers(ctx context.Context, hash string, rid int64) (torrentPeersResponse TorrentPeersResponse, err error) {
+func (s *Sync) TorrentPeers(ctx context.Context, hash string, rid int64) (torrentPeersResponse *TorrentPeersResponse, err error) {
 	path := "/api/v2/sync/torrentPeers"
 
 	query := url.Values{}
 	query.Add("hash", hash)
 	query.Add("rid", strconv.FormatInt(rid, 10))
 
-	resp, _, err := s.api.doRequest(ctx, http.MethodGet, path, query, nil)
+	err = s.api.doRequest(ctx, http.MethodGet, path, query, nil, &torrentPeersResponse)
 
-	if err != nil {
-		return
-	}
-	defer resp.Close()
-	err = json.NewDecoder(resp).Decode(&torrentPeersResponse)
 	if err != nil {
 		return
 	}
